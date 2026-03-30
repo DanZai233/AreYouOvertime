@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, startOfWeek, addDays, isSameDay, parseISO, differenceInMinutes, isToday, isFuture } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import { Edit3, TrendingUp, Calendar, Coffee, AlertCircle, Settings as SettingsIcon, Trash2, X, Wand2, Share2, CheckCircle2 } from 'lucide-react';
+import { Edit3, TrendingUp, Calendar, Coffee, AlertCircle, Settings as SettingsIcon, Trash2, X, Wand2, Share2, CheckCircle2, Crown, Sparkles, ScrollText, ArrowRightLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
+import WoodenFish from './WoodenFish';
 
 interface DailyRecord {
   date: string;
@@ -86,6 +87,51 @@ export default function Dashboard({ settings, onEditSettings }: any) {
   }, [settings]);
 
   const minuteRate = hourlyRate / 60;
+  const dailyRate = hourlyRate * (settings.targetWeeklyHours / settings.workDays.length);
+
+  // Worker Tier System
+  const workerTier = useMemo(() => {
+    if (hourlyRate < 20) return { title: '纯血牛马', color: 'text-gray-500', bg: 'bg-gray-100', icon: '🐴' };
+    if (hourlyRate < 50) return { title: '高级打工人', color: 'text-blue-500', bg: 'bg-blue-100', icon: '💼' };
+    if (hourlyRate < 100) return { title: '摸鱼达人', color: 'text-purple-500', bg: 'bg-purple-100', icon: '🎣' };
+    if (hourlyRate < 200) return { title: '职场天花板', color: 'text-amber-500', bg: 'bg-amber-100', icon: '🏆' };
+    return { title: '资本家之光', color: 'text-rose-500', bg: 'bg-rose-100', icon: '✨' };
+  }, [hourlyRate]);
+
+  // Daily Almanac
+  const almanac = useMemo(() => {
+    const goodThings = [
+      '带薪拉屎', '准点下班', '喝冰美式', '带薪发呆', '老板出差', 
+      '系统崩溃', '疯狂摸鱼', '点下午茶', '准时打卡', '拒绝画饼', 
+      '糊弄学', '摸鱼被夸', '薅公司羊毛', '提前溜走', '薪水到账', 
+      '假装开会', '电脑死机', '摸鱼吃瓜', '闭目养神', '甩锅成功', 
+      '准点干饭', '摸鱼不被抓', '带薪沉思', '去茶水间八卦'
+    ];
+    const badThings = [
+      '主动揽活', '和老板对视', '提交通知', '下班开会', '背锅', 
+      '需求变更', '早起', '回复工作群', '提加薪', '冲动消费', 
+      '帮人Debug', '修复Bug', '周五发版', '参加团建', '听老板画饼', 
+      '接手祖传代码', '晚上看群', '熬夜加班', '周末回消息', '迟到被抓',
+      '提离职', '写文档', '开摄像头', '被@全员'
+    ];
+    
+    // Simple hash based on date string to keep it consistent for the day
+    const dateStr = format(new Date(), 'yyyy-MM-dd');
+    let hash = 0;
+    for (let i = 0; i < dateStr.length; i++) {
+      hash = dateStr.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    const goodIdx1 = Math.abs(hash) % goodThings.length;
+    const goodIdx2 = Math.abs(hash + 1) % goodThings.length;
+    const badIdx1 = Math.abs(hash + 2) % badThings.length;
+    const badIdx2 = Math.abs(hash + 3) % badThings.length;
+
+    return {
+      good: [goodThings[goodIdx1], goodThings[goodIdx2 !== goodIdx1 ? goodIdx2 : (goodIdx2 + 1) % goodThings.length]],
+      bad: [badThings[badIdx1], badThings[badIdx2 !== badIdx1 ? badIdx2 : (badIdx2 + 1) % badThings.length]]
+    };
+  }, []);
 
   // Calculate worked minutes for a day
   const calculateWorkedMinutes = (start: string, end: string) => {
@@ -361,13 +407,18 @@ export default function Dashboard({ settings, onEditSettings }: any) {
 
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <header className="flex items-center justify-between">
+        <header className="flex items-center justify-between bg-white p-4 rounded-3xl shadow-sm border border-emerald-50">
           <div>
             <h1 className="text-2xl font-bold text-emerald-900 flex items-center gap-2">
               <Coffee className="w-6 h-6 text-emerald-500" />
               加了么
             </h1>
-            <p className="text-sm text-emerald-600">你的时薪：¥{hourlyRate.toFixed(2)}/小时</p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-sm text-emerald-600">时薪：¥{hourlyRate.toFixed(2)}</p>
+              <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1", workerTier.bg, workerTier.color)}>
+                {workerTier.icon} {workerTier.title}
+              </span>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block">
@@ -376,14 +427,14 @@ export default function Dashboard({ settings, onEditSettings }: any) {
             </div>
             <button 
               onClick={handleShare}
-              className="p-2 bg-white rounded-full shadow-sm text-emerald-600 hover:bg-emerald-50 transition-colors"
+              className="p-2 bg-emerald-50 rounded-full shadow-sm text-emerald-600 hover:bg-emerald-100 transition-colors"
               title="炫耀一下"
             >
               <Share2 className="w-5 h-5" />
             </button>
             <button 
               onClick={onEditSettings}
-              className="p-2 bg-white rounded-full shadow-sm text-emerald-600 hover:bg-emerald-50 transition-colors"
+              className="p-2 bg-emerald-50 rounded-full shadow-sm text-emerald-600 hover:bg-emerald-100 transition-colors"
               title="设置"
             >
               <SettingsIcon className="w-5 h-5" />
@@ -395,6 +446,72 @@ export default function Dashboard({ settings, onEditSettings }: any) {
         <div className="sm:hidden bg-white rounded-2xl p-4 shadow-sm border border-emerald-50 flex justify-between items-center">
           <span className="text-sm text-emerald-600">今日实时收入</span>
           <span className="text-2xl font-bold text-amber-500">¥{todayIncome.toFixed(2)}</span>
+        </div>
+
+        {/* Bento Grid Layout for New Features */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          {/* Daily Almanac */}
+          <div className="bg-white rounded-3xl p-6 shadow-xl shadow-emerald-100/40 border border-emerald-50 flex flex-col justify-center relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-rose-50 rounded-bl-full -z-10 opacity-50"></div>
+            <h2 className="text-lg font-semibold text-emerald-800 flex items-center gap-2 mb-4">
+              <ScrollText className="w-5 h-5 text-emerald-500" />
+              打工黄历
+              <span className="text-xs font-normal text-emerald-400 ml-auto">{format(new Date(), 'yyyy年MM月dd日')}</span>
+            </h2>
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-lg shrink-0">宜</div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {almanac.good.map(item => (
+                    <span key={item} className="px-3 py-1 bg-green-50 text-green-700 rounded-lg text-sm font-medium">{item}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold text-lg shrink-0">忌</div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {almanac.bad.map(item => (
+                    <span key={item} className="px-3 py-1 bg-red-50 text-red-700 rounded-lg text-sm font-medium">{item}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Equivalent Exchange */}
+          <div className="bg-white rounded-3xl p-6 shadow-xl shadow-emerald-100/40 border border-emerald-50 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-bl-full -z-10 opacity-50"></div>
+            <h2 className="text-lg font-semibold text-emerald-800 flex items-center gap-2 mb-4">
+              <ArrowRightLeft className="w-5 h-5 text-emerald-500" />
+              等价交换
+            </h2>
+            <div className="space-y-4">
+              <p className="text-sm text-emerald-600">你今天的日薪 (¥{dailyRate.toFixed(0)}) 相当于：</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100/50">
+                  <div className="text-2xl mb-1">☕</div>
+                  <div className="text-lg font-bold text-amber-700">{(dailyRate / 30).toFixed(1)} 杯</div>
+                  <div className="text-xs text-amber-600/80">星巴克拿铁</div>
+                </div>
+                <div className="bg-blue-50 p-3 rounded-2xl border border-blue-100/50">
+                  <div className="text-2xl mb-1">🍗</div>
+                  <div className="text-lg font-bold text-blue-700">{(dailyRate / 40).toFixed(1)} 顿</div>
+                  <div className="text-xs text-blue-600/80">疯狂星期四</div>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-2xl border border-purple-100/50">
+                  <div className="text-2xl mb-1">🚽</div>
+                  <div className="text-lg font-bold text-purple-700">{(dailyRate / 100000).toFixed(4)} ㎡</div>
+                  <div className="text-xs text-purple-600/80">市中心厕所</div>
+                </div>
+                <div className="bg-rose-50 p-3 rounded-2xl border border-rose-100/50">
+                  <div className="text-2xl mb-1">💇‍♂️</div>
+                  <div className="text-lg font-bold text-rose-700">{(dailyRate / 5).toFixed(0)} 根</div>
+                  <div className="text-xs text-rose-600/80">损失的头发</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Weekly Progress Card */}
@@ -613,6 +730,9 @@ export default function Dashboard({ settings, onEditSettings }: any) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Cyber Wooden Fish */}
+      <WoodenFish />
     </div>
   );
 }
