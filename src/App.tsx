@@ -12,18 +12,24 @@ export default function App() {
     const saved = localStorage.getItem('jialeme_settings');
     return saved ? JSON.parse(saved) : null;
   });
+  const [isEditing, setIsEditing] = useState(!settings);
 
   const handleSaveSettings = (newSettings: any) => {
     setSettings(newSettings);
     localStorage.setItem('jialeme_settings', JSON.stringify(newSettings));
+    setIsEditing(false);
   };
 
   return (
     <div className="min-h-screen bg-emerald-50 text-emerald-900 font-sans selection:bg-emerald-200">
-      {settings ? (
-        <Dashboard settings={settings} onEditSettings={() => setSettings(null)} />
+      {!isEditing && settings ? (
+        <Dashboard settings={settings} onEditSettings={() => setIsEditing(true)} />
       ) : (
-        <Settings onSave={handleSaveSettings} initialSettings={settings} />
+        <Settings 
+          onSave={handleSaveSettings} 
+          initialSettings={settings} 
+          onCancel={settings ? () => setIsEditing(false) : undefined}
+        />
       )}
     </div>
   );

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Settings as SettingsIcon, Briefcase, Clock, DollarSign, CalendarDays } from 'lucide-react';
+import { Settings as SettingsIcon, Briefcase, Clock, DollarSign, CalendarDays, RotateCcw, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 
-export default function Settings({ onSave, initialSettings }: any) {
-  const [formData, setFormData] = useState(initialSettings || {
+export default function Settings({ onSave, initialSettings, onCancel }: any) {
+  const defaultSettings = {
     monthlySalary: 10000,
     targetWeeklyHours: 40,
     workDays: [1, 2, 3, 4, 5], // Mon-Fri
@@ -13,7 +13,15 @@ export default function Settings({ onSave, initialSettings }: any) {
       afternoonStart: '13:00',
       afternoonEnd: '18:00',
     }
-  });
+  };
+
+  const [formData, setFormData] = useState(initialSettings || defaultSettings);
+
+  const handleReset = () => {
+    if (window.confirm('确定要重置为默认设置吗？')) {
+      setFormData(defaultSettings);
+    }
+  };
 
   const handleDayToggle = (day: number) => {
     setFormData((prev: any) => {
@@ -46,14 +54,25 @@ export default function Settings({ onSave, initialSettings }: any) {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-8">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-emerald-100/50 p-6 sm:p-8 border border-emerald-50">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="p-3 bg-emerald-100 text-emerald-600 rounded-2xl">
-            <SettingsIcon className="w-6 h-6" />
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-emerald-100 text-emerald-600 rounded-2xl">
+              <SettingsIcon className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-emerald-900">加了么</h1>
+              <p className="text-sm text-emerald-600/80">你的打工人专属算命器</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-emerald-900">加了么</h1>
-            <p className="text-sm text-emerald-600/80">你的打工人专属算命器</p>
-          </div>
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="p-2 text-emerald-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-full transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -164,12 +183,22 @@ export default function Settings({ onSave, initialSettings }: any) {
             </div>
           </div>
 
-          <button
-            type="submit"
-            className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium text-lg transition-colors shadow-lg shadow-emerald-200"
-          >
-            开始算命
-          </button>
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={handleReset}
+              className="flex-1 py-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-xl font-medium text-lg transition-colors flex items-center justify-center gap-2"
+            >
+              <RotateCcw className="w-5 h-5" />
+              重置
+            </button>
+            <button
+              type="submit"
+              className="flex-[2] py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium text-lg transition-colors shadow-lg shadow-emerald-200"
+            >
+              {initialSettings ? '保存设置' : '开始算命'}
+            </button>
+          </div>
         </form>
       </div>
     </div>
