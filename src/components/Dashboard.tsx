@@ -244,7 +244,8 @@ export default function Dashboard({ settings, onEditSettings }: any) {
       } else if (dateStr === todayStr) {
         // Today
         const todayStart = record?.actualStart || settings.shift.morningStart;
-        const todayEnd = record?.actualEnd || leaveTime; // Use leaveTime if actualEnd not set
+        // ALWAYS use the "what-if" leaveTime for the prediction, ignoring actualEnd if set
+        const todayEnd = leaveTime;
         plannedMinutes += calculateWorkedMinutes(todayStart, todayEnd);
       } else {
         // Future days
@@ -291,17 +292,34 @@ export default function Dashboard({ settings, onEditSettings }: any) {
     const [lsH, lsM] = settings.shift.morningEnd.split(':').map(Number);
     const [leH, leM] = settings.shift.afternoonStart.split(':').map(Number);
     
-    let endMin = (sH * 60 + sM) + minutesNeededPerDay;
-    // Add lunch break if it crosses
-    if (endMin > (lsH * 60 + lsM)) {
-      endMin += ((leH * 60 + leM) - (lsH * 60 + lsM));
+    let currentMin = sH * 60 + sM;
+    const lunchStartMin = lsH * 60 + lsM;
+    const lunchEndMin = leH * 60 + leM;
+    let remaining = minutesNeededPerDay;
+
+    // Robustly add lunch break if the work period crosses it
+    if (currentMin < lunchStartMin) {
+      const workBeforeLunch = lunchStartMin - currentMin;
+      if (remaining <= workBeforeLunch) {
+        currentMin += remaining;
+        remaining = 0;
+      } else {
+        remaining -= workBeforeLunch;
+        currentMin = lunchEndMin; // Skip lunch break
+      }
+    } else if (currentMin < lunchEndMin) {
+      // If start time is somehow during lunch, skip to end of lunch
+      currentMin = lunchEndMin;
     }
+
+    // Add remaining work after lunch
+    currentMin += remaining;
     
     // Cap at 23:59
-    endMin = Math.min(endMin, 23 * 60 + 59);
+    currentMin = Math.min(currentMin, 23 * 60 + 59);
     
-    const endHour = Math.floor(endMin / 60);
-    const endMinute = Math.floor(endMin % 60);
+    const endHour = Math.floor(currentMin / 60);
+    const endMinute = Math.floor(currentMin % 60);
     const suggestedLeaveTime = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
 
     return {
